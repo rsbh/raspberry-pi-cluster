@@ -26,3 +26,9 @@ ansible-playbook playbooks/k3s.yml
 ```sh
 ansible pi-main -b -a "k3s kubectl get nodes"
 ```
+
+## Install Github Actions Runner
+
+```sh
+ansible-playbook playbooks/ga-runner.yml -e runner_token={TOKEN}
+```

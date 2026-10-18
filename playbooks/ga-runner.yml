@@ -1,0 +1,50 @@
+- hosts: main
+  become: true
+  vars:
+    runner_version: "2.338.0"
+    runner_dir: /home/pi/actions-runner
+    repo_url: https://github.com/rsbh/raspberry-pi-cluster
+  tasks:
+    - name: Create runner dir
+      file:
+        path: "{{ runner_dir }}"
+        state: directory
+        owner: pi
+        group: pi
+
+    - name: Download and extract runner
+      unarchive:
+        src: "https://github.com/actions/runner/releases/download/v{{ runner_version }}/actions-runner-linux-arm64-{{ runner_version }}.tar.gz"
+        dest: "{{ runner_dir }}"
+        remote_src: true
+        owner: pi
+        group: pi
+        creates: "{{ runner_dir }}/config.sh"
+
+    - name: Install dependencies
+      command: ./bin/installdependencies.sh
+      args:
+        chdir: "{{ runner_dir }}"
+        creates: "{{ runner_dir }}/.runner"
+
+    - name: Configure runner
+      become_user: pi
+      command: >
+        ./config.sh --unattended
+        --url {{ repo_url }}
+        --token {{ runner_token }}
+        --name {{ inventory_hostname }}
+      args:
+        chdir: "{{ runner_dir }}"
+        creates: "{{ runner_dir }}/.runner"
+
+    - name: Install service
+      command: ./svc.sh install pi
+      args:
+        chdir: "{{ runner_dir }}"
+        creates: /etc/systemd/system/actions.runner.*
+
+    - name: Start service
+      command: ./svc.sh start
+      args:
+        chdir: "{{ runner_dir }}"
